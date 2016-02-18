@@ -1,0 +1,15 @@
+.room {
+    font-family: monospace;
+}
+
+.empty {
+    color: white;
+}
+
+.spawn {
+    color: blue;
+}
+
+.normal {
+    color: green;
+}

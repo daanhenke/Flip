@@ -1,39 +1,52 @@
-function randrange(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+function drawDungeon(dungeon) {
+    var spawnRoom = dungeon.spawnRoom;
+    var grid = dungeon.dungeon;
+    var realval = "";
+    var val = "";
+
+    console.log(grid);
+
+    grid = grid[0].map(function (col, i) {
+        return grid.map(function (row) {
+            return row[i]
+        })
+    });
+
+    console.log(grid);
+
+    for (i = 0; i < grid.length; i++) {
+        for (j = 0; j < grid[i].length; j++) {
+            switch(grid[i][j].type) {
+                case -1:
+                    val = '<b class="room empty" myx="' + i + '" myy="' + j + '">[E]</b>';
+                    break;
+
+                case 0:
+                    val = '<b class="room spawn" myx="' + i + '" myy="' + j + '">[S]</b>';
+                    break;
+
+                case 1:
+                    val = '<b class="room normal" myx="' + i + '" myy="' + j + '">[R]</b>';
+                    break;
+            }
+
+            realval += val
+        }
+        realval += '<br />';
+    }
+    $("body").html(realval);
+    $("body").on('click', 'b.room', function() {
+        var thisx = $(this).attr('myx');
+        var thisy = $(this).attr('myy');
+
+        console.log(window.dungeon.dungeon[thisx][thisy]);
+    })
 }
 
-function hasDoors(room, dungeon) {
-    var roomList = [];
-    var side, sides;
-    var retval;
+//THIS IS NEEDED CODE
 
-    if(room.doors.left == false) {
-        roomList.append(dungeon[room.x - 1][room.y]);
-        sides.append(0);
-    }
-    if(room.doors.right == false) {
-        roomList.append(dungeon[room.x + 1][room.y]);
-        sides.append(1);
-    }
-    if(room.doors.up == false) {
-        roomList.append(dungeon[room.x][room.y - 1]);
-        sides.append(2);
-    }
-    if(room.doors.down == false) {
-        roomList.append(dungeon[room.x][room.y + 1]);
-        sides.append(3);
-    }
-
-    if(sides.length > 0) {
-        side = randrange(0, sides.length - 1);
-    } else {
-        side = -1;
-    }
-
-    retval[0] = roomList;
-    retval[1] = side;
-
-    return retval;
+function randrange(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function generateDungeon(width, height, difficulty, max_rooms, startx, starty) {
@@ -41,11 +54,13 @@ function generateDungeon(width, height, difficulty, max_rooms, startx, starty) {
     var dungeon = [];
     var data = {};
     var row = [];
+    var roomList = [];
     var rooms = 0;
     var currentroom, oldroom;
 
     //Create empty dungeon
     for (var i = 0; i < width; i++) {
+        row = [];
         for (var j = 0; j < height; j++) {
             row[j] = {
                 "type": -1,
@@ -65,54 +80,96 @@ function generateDungeon(width, height, difficulty, max_rooms, startx, starty) {
 
     //Create first room
     currentroom = dungeon[startx][starty];
+    console.log(currentroom);
     currentroom.type = 0;
+    roomList.push(currentroom);
 
     rooms++;
 
     data.spawnRoom = currentroom;
 
     while (!done) {
-        if(currentroom.type == -1) {
-            var retval = hasDoors(currentroom, dungeon);
-            var doors = retval[0];
-            var side = retval[1];
-
-            if(doors.length > 0) {
-                oldroom = currentroom;
-                currentroom = doors[randrange(0, doors.length - 1)];
-
-                switch(side) {
-                    case 0:
-                        oldroom.left = true;
-                        currentroom.right = true;
-                        break;
-
-                    case 1:
-                        oldroom.right = true;
-                        currentroom.left = true;
-                        break;
-
-                    case 2:
-                        oldroom.up = true;
-                        currentroom.down = true;
-                        break;
-
-                    case 3:
-                        oldroom.down = true;
-                        currentroom.up = true;
-                        break;
+        oldroom = roomList[randrange(0, roomList.length - 1)];
+        currentroom = null;
+        switch (randrange(0, 3)) {
+            case 0:
+                if (typeof(dungeon[oldroom.x - 1]) != "undefined" && typeof(dungeon[oldroom.x - 1][oldroom.y]) != "undefined") {
+                    currentroom = dungeon[oldroom.x - 1][oldroom.y];
+                    if (currentroom.type == -1) {
+                        oldroom.doors.left = true;
+                        currentroom.doors.right = true;
+                    }
                 }
+                break;
 
+            case 1:
+                if (typeof(dungeon[oldroom.x + 1]) != "undefined" && typeof(dungeon[oldroom.x + 1][oldroom.y]) != "undefined") {
+                    currentroom = dungeon[oldroom.x + 1][oldroom.y];
+                    if (currentroom.type == -1) {
+                        oldroom.doors.right = true;
+                        currentroom.doors.left = true;
+                    }
+                }
+                break;
+
+            case 2:
+                if (typeof(dungeon[oldroom.x]) != "undefined" && typeof(dungeon[oldroom.x][oldroom.y - 1]) != "undefined") {
+                    currentroom = dungeon[oldroom.x][oldroom.y - 1];
+                    if (currentroom.type == -1) {
+                        oldroom.doors.up = true;
+                        currentroom.doors.down = true;
+                    }
+                }
+                break;
+
+            case 3:
+                if (typeof(dungeon[oldroom.x]) != "undefined" && typeof(dungeon[oldroom.x][oldroom.y + 1]) != "undefined") {
+                    currentroom = dungeon[oldroom.x][oldroom.y + 1];
+                    if (currentroom.type == -1) {
+                        oldroom.doors.down = true;
+                        currentroom.doors.up = true;
+                    }
+                }
+                break;
+        }
+
+        if (currentroom != null) {
+            if (currentroom.type == -1) {
+                currentroom.type = 1;
                 rooms++;
+                roomList.push(currentroom);
             }
+        }
+
+        if (rooms >= max_rooms) {
+            done = true;
         }
     }
 
     data.dungeon = dungeon;
 
-    return data;
+    return JSON.stringify(data);
 }
 
+function getJSONValue(json_string, identifier) {
+    var json_object = JSON.parse(json_string);
+    var ids = identifier.split('.');
+    var current
+    for(var id in ids) {
+        current = ids[id];
+        json_object = json_object[current];
+    }
+    if(typeof(json_object) != 'string' && typeof(json_object) != 'number') {
+        json_object = JSON.stringify(json_object);
+    }
+    return json_object;
+}
+
+//NEEDED CODE ENDS HERE
+
 $(function () {
-    console.log(generateDungeon(3, 4, 1, 4, 1, 2))
+    var dung = generateDungeon(50, 50, 1, 30, 29, 29);
+    drawDungeon(dung);
+    console.log(JSON.stringify(dung));
+    window.dungeon = dung;
 });
